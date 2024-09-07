@@ -79,7 +79,7 @@ private:
 		bankNumber = _prgBanks[reg-0x5113];
 		memoryType = PrgMemoryType::PrgRom;
 		if((((bankNumber & 0x80) == 0x00) && reg != 0x5117) || reg == 0x5113) {
-			bankNumber &= 0x07;
+			bankNumber &= 0x0F;
 			accessType = MemoryAccessType::Read;
 			if(_prgRamProtect1 == 0x02 && _prgRamProtect2 == 0x01) {
 				accessType |= MemoryAccessType::Write;
@@ -101,7 +101,7 @@ private:
 					memoryType = PrgMemoryType::SaveRam;
 				}
 
-				if(realSaveRamSize + realWorkRamSize != 0x4000 && bankNumber >= 4) {
+				if(realSaveRamSize + realWorkRamSize != 0x4000 && realWorkRamSize != 0x20000 && bankNumber >= 4) {
 					//When not 2x 8kb (=16kb), banks 4/5/6/7 select the empty socket and return open bus
 					accessType = MemoryAccessType::NoAccess;
 				}
