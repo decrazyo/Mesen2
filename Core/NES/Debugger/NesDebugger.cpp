@@ -342,7 +342,9 @@ void NesDebugger::ProcessPpuRead(uint16_t addr, uint8_t value, MemoryType memory
 {
 	MemoryOperationInfo operation(addr, value, MemoryOperationType::Read, memoryType);
 	AddressInfo addressInfo { addr, memoryType };
-	if(DebugUtilities::IsRelativeMemory(memoryType)) {
+	if(memoryType == MemoryType::NesPpu2Memory) {
+		addressInfo.Address = addr & 0x3FFF;
+	} else if(DebugUtilities::IsRelativeMemory(memoryType)) {
 		_mapper->GetPpuAbsoluteAddress(addr, addressInfo);
 	}
 	if(addressInfo.Type == MemoryType::NesChrRom && opType == MemoryOperationType::PpuRenderingRead) {
@@ -356,7 +358,9 @@ void NesDebugger::ProcessPpuWrite(uint16_t addr, uint8_t value, MemoryType memor
 {
 	MemoryOperationInfo operation(addr, value, MemoryOperationType::Write, memoryType);
 	AddressInfo addressInfo { addr, memoryType };
-	if(DebugUtilities::IsRelativeMemory(memoryType)) {
+	if(memoryType == MemoryType::NesPpu2Memory) {
+		addressInfo.Address = addr & 0x3FFF;
+	} else if(DebugUtilities::IsRelativeMemory(memoryType)) {
 		_mapper->GetPpuAbsoluteAddress(addr, addressInfo);
 	}
 	_debugger->ProcessBreakConditions(CpuType::Nes, *_step.get(), _breakpointManager.get(), operation, addressInfo);

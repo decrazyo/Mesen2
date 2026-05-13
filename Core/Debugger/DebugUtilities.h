@@ -115,6 +115,9 @@ public:
 			case MemoryType::NesMapperRam:
 			case MemoryType::NesPaletteRam:
 			case MemoryType::NesPpuMemory:
+			case MemoryType::NesPpu2Memory:
+			case MemoryType::NesPpu2SpriteRam:
+			case MemoryType::NesPpu2SecondarySpriteRam:
 			case MemoryType::NesPrgRom:
 			case MemoryType::NesSaveRam:
 			case MemoryType::NesSpriteRam:
@@ -175,7 +178,7 @@ public:
 
 	static constexpr bool IsRelativeMemory(MemoryType memType)
 	{
-		return memType <= GetLastCpuMemoryType();
+		return memType <= GetLastCpuMemoryType() || memType == MemoryType::NesPpu2Memory;
 	}
 
 	static constexpr MemoryType GetLastCpuMemoryType()
@@ -199,6 +202,9 @@ public:
 			case MemoryType::NesNametableRam:
 			case MemoryType::NesSecondarySpriteRam:
 			case MemoryType::NesPpuMemory:
+			case MemoryType::NesPpu2Memory:
+			case MemoryType::NesPpu2SpriteRam:
+			case MemoryType::NesPpu2SecondarySpriteRam:
 				return true;
 
 			case MemoryType::PceVideoRam:

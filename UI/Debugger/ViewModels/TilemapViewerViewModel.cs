@@ -322,11 +322,14 @@ namespace Mesen.Debugger.ViewModels
 					if(size.Width != 0 && size.Height != 0) {
 						Tabs = new List<TilemapViewerTab>() {
 							new() { Title = "Nametables", Layer = 0 },
-							new() { Title = "Window", Layer = 1 }
+							new() { Title = "Window", Layer = 1 },
+							new() { Title = "PPU2 Nametables", Layer = 0, VramMemoryType = MemoryType.NesPpu2Memory, UsePpu2 = true },
+							new() { Title = "PPU2 Window", Layer = 1, VramMemoryType = MemoryType.NesPpu2Memory, UsePpu2 = true }
 						};
 					} else {
 						Tabs = new List<TilemapViewerTab>() {
-							new() { Title = "", Layer = 0 }
+							new() { Title = "PPU", Layer = 0 },
+							new() { Title = "PPU2", Layer = 0, VramMemoryType = MemoryType.NesPpu2Memory, UsePpu2 = true }
 						};
 					}
 					break;
@@ -384,7 +387,9 @@ namespace Mesen.Debugger.ViewModels
 
 		private DebugTilemapTileInfo? GetSelectedTileInfo()
 		{
-			if(_data.PpuState == null || _data.PpuToolsState == null || _data.Vram == null) {
+			BaseState? ppuState = GetPpuState(SelectedTab);
+			byte[] vram = GetVram(SelectedTab);
+			if(ppuState == null || _data.PpuToolsState == null || vram == null) {
 				return null;
 			} else {
 				PixelPoint p;
@@ -396,7 +401,7 @@ namespace Mesen.Debugger.ViewModels
 					}
 					p = PixelPoint.FromPoint(SelectionRect.TopLeft, 1);
 				}
-				return DebugApi.GetTilemapTileInfo((uint)p.X, (uint)p.Y, CpuType, GetOptions(SelectedTab), _data.Vram, _data.PpuState, _data.PpuToolsState);
+				return DebugApi.GetTilemapTileInfo((uint)p.X, (uint)p.Y, CpuType, GetOptions(SelectedTab), vram, ppuState, _data.PpuToolsState);
 			}
 		}
 
@@ -445,17 +450,50 @@ namespace Mesen.Debugger.ViewModels
 			return SelectedTab?.VramMemoryType ?? CpuType.GetVramMemoryType();
 		}
 
+		private BaseState? GetPpuState(TilemapViewerTab tab)
+		{
+			return tab.UsePpu2 ? _data.Ppu2State : _data.PpuState;
+		}
+
+		private byte[] GetVram(TilemapViewerTab tab)
+		{
+			return tab.UsePpu2 ? _data.Ppu2Vram : _data.Vram;
+		}
+
+		private byte[] GetPrevVram(TilemapViewerTab tab)
+		{
+			return tab.UsePpu2 ? _data.PrevPpu2Vram : _data.PrevVram;
+		}
+
+		private AddressCounters[] GetAccessCounters(TilemapViewerTab tab)
+		{
+			return tab.UsePpu2 ? _data.Ppu2AccessCounters : _data.AccessCounters;
+		}
+
 		public void RefreshData()
 		{
 			lock(_updateLock) {
 				_coreData.MasterClock = EmuApi.GetTimingInfo(CpuType).MasterClock;
 
-				BaseState ppuState = DebugApi.GetPpuState(CpuType);
-				_coreData.PpuState = ppuState;
+				if(CpuType == CpuType.Nes) {
+					NesState nesState = DebugApi.GetConsoleState<NesState>(ConsoleType.Nes);
+					_coreData.PpuState = nesState.Ppu;
+					_coreData.Ppu2State = nesState.Ppu2;
+					_coreData.PrevPpu2Vram = _coreData.Ppu2Vram;
+					DebugApi.GetMemoryState(MemoryType.NesPpu2Memory, ref _coreData.Ppu2Vram);
+					DebugApi.GetMemoryAccessCounts(MemoryType.NesPpu2Memory, ref _coreData.Ppu2AccessCounters);
+				} else {
+					_coreData.PpuState = DebugApi.GetPpuState(CpuType);
+					_coreData.Ppu2State = null;
+					Array.Resize(ref _coreData.Ppu2Vram, 0);
+					Array.Resize(ref _coreData.PrevPpu2Vram, 0);
+					Array.Resize(ref _coreData.Ppu2AccessCounters, 0);
+				}
 				_coreData.PpuToolsState = DebugApi.GetPpuToolsState(CpuType);
 				_coreData.PrevVram = _coreData.Vram;
-				DebugApi.GetMemoryState(GetVramMemoryType(), ref _coreData.Vram);
-				DebugApi.GetMemoryAccessCounts(GetVramMemoryType(), ref _coreData.AccessCounters);
+				MemoryType vramMemoryType = CpuType == CpuType.Nes ? CpuType.GetVramMemoryType() : GetVramMemoryType();
+				DebugApi.GetMemoryState(vramMemoryType, ref _coreData.Vram);
+				DebugApi.GetMemoryAccessCounts(vramMemoryType, ref _coreData.AccessCounters);
 
 				DebugPaletteInfo palette = DebugApi.GetPaletteInfo(CpuType);
 				_coreData.RgbPalette = palette.GetRgbPalette();
@@ -499,7 +537,8 @@ namespace Mesen.Debugger.ViewModels
 
 			foreach(TilemapViewerTab tab in Tabs) {
 				options = GetOptions(tab);
-				size = DebugApi.GetTilemapSize(CpuType, options, _data.PpuState);
+				BaseState? tabPpuState = GetPpuState(tab);
+				size = tabPpuState == null ? new FrameInfo() : DebugApi.GetTilemapSize(CpuType, options, tabPpuState);
 				tab.Enabled = size.Width != 0 && size.Height != 0;
 			}
 
@@ -512,14 +551,19 @@ namespace Mesen.Debugger.ViewModels
 				}
 			}
 
-			options = GetOptions(SelectedTab, _data.PrevVram, _data.AccessCounters);
+			options = GetOptions(SelectedTab, GetPrevVram(SelectedTab), GetAccessCounters(SelectedTab));
 			options.MasterClock = Interlocked.Read(ref _data.MasterClock);
 
-			size = DebugApi.GetTilemapSize(CpuType, options, _data.PpuState);
+			BaseState? selectedPpuState = GetPpuState(SelectedTab);
+			if(selectedPpuState == null) {
+				return;
+			}
+
+			size = DebugApi.GetTilemapSize(CpuType, options, selectedPpuState);
 			InitBitmap((int)size.Width, (int)size.Height);
 
 			using(var framebuffer = ViewerBitmap.Lock()) {
-				_data.TilemapInfo = DebugApi.GetTilemap(CpuType, options, _data.PpuState, _data.PpuToolsState, _data.Vram, _data.RgbPalette, framebuffer.FrameBuffer.Address);
+				_data.TilemapInfo = DebugApi.GetTilemap(CpuType, options, selectedPpuState, _data.PpuToolsState, GetVram(SelectedTab), _data.RgbPalette, framebuffer.FrameBuffer.Address);
 			}
 
 			if(_data.TilemapInfo.Bpp == 0) {
@@ -579,11 +623,12 @@ namespace Mesen.Debugger.ViewModels
 
 		public DynamicTooltip? GetPreviewPanel(PixelPoint p, DynamicTooltip? tooltipToUpdate)
 		{
-			if(_data.PpuState == null || _data.PpuToolsState == null) {
+			BaseState? ppuState = GetPpuState(SelectedTab);
+			if(ppuState == null || _data.PpuToolsState == null) {
 				return null;
 			}
 
-			DebugTilemapTileInfo? result = DebugApi.GetTilemapTileInfo((uint)p.X, (uint)p.Y, CpuType, GetOptions(SelectedTab), _data.Vram, _data.PpuState, _data.PpuToolsState);
+			DebugTilemapTileInfo? result = DebugApi.GetTilemapTileInfo((uint)p.X, (uint)p.Y, CpuType, GetOptions(SelectedTab), GetVram(SelectedTab), ppuState, _data.PpuToolsState);
 			if(result == null) {
 				return null;
 			}
@@ -696,7 +741,8 @@ namespace Mesen.Debugger.ViewModels
 
 		private void EditTileGrid(int columnCount, int rowCount, Window wnd)
 		{
-			if(_data.PpuState == null || _data.PpuToolsState == null) {
+			BaseState? ppuState = GetPpuState(SelectedTab);
+			if(ppuState == null || _data.PpuToolsState == null) {
 				return;
 			}
 
@@ -706,7 +752,7 @@ namespace Mesen.Debugger.ViewModels
 			int palette = -1;
 			for(int row = 0; row < rowCount; row++) {
 				for(int col = 0; col < columnCount; col++) {
-					DebugTilemapTileInfo? tile = DebugApi.GetTilemapTileInfo((uint)(p.X + GridSizeX*col), (uint)(p.Y + GridSizeY*row), CpuType, GetOptions(SelectedTab), _data.Vram, _data.PpuState, _data.PpuToolsState);
+					DebugTilemapTileInfo? tile = DebugApi.GetTilemapTileInfo((uint)(p.X + GridSizeX*col), (uint)(p.Y + GridSizeY*row), CpuType, GetOptions(SelectedTab), GetVram(SelectedTab), ppuState, _data.PpuToolsState);
 					if(tile == null) {
 						if(col == 0) {
 							rowCount = row;
@@ -807,6 +853,7 @@ namespace Mesen.Debugger.ViewModels
 		[Reactive] public string Title { get; set; } = "";
 		[Reactive] public int Layer { get; set; }  = 0;
 		[Reactive] public MemoryType? VramMemoryType { get; set; }
+		[Reactive] public bool UsePpu2 { get; set; }
 		[Reactive] public bool Enabled { get; set; } = true;
 	}
 
@@ -815,27 +862,35 @@ namespace Mesen.Debugger.ViewModels
 		public DebugTilemapInfo TilemapInfo;
 		public UInt64 MasterClock;
 		public BaseState? PpuState;
+		public BaseState? Ppu2State;
 		public BaseState? PpuToolsState;
 		public byte[] PrevVram = Array.Empty<byte>();
 		public byte[] Vram = Array.Empty<byte>();
+		public byte[] PrevPpu2Vram = Array.Empty<byte>();
+		public byte[] Ppu2Vram = Array.Empty<byte>();
 		public UInt32[] RgbPalette = Array.Empty<UInt32>();
 		public UInt32[] RawPalette = Array.Empty<UInt32>();
 		public RawPaletteFormat RawFormat;
 		public AddressCounters[] AccessCounters = Array.Empty<AddressCounters>();
+		public AddressCounters[] Ppu2AccessCounters = Array.Empty<AddressCounters>();
 
 		public void CopyTo(TilemapViewerData dst)
 		{
 			dst.TilemapInfo = TilemapInfo;
 			dst.MasterClock = MasterClock;
 			dst.PpuState = PpuState;
+			dst.Ppu2State = Ppu2State;
 			dst.PpuToolsState = PpuToolsState;
 			dst.RawFormat = RawFormat;
 
 			CopyArray(PrevVram, ref dst.PrevVram);
 			CopyArray(Vram, ref dst.Vram);
+			CopyArray(PrevPpu2Vram, ref dst.PrevPpu2Vram);
+			CopyArray(Ppu2Vram, ref dst.Ppu2Vram);
 			CopyArray(RgbPalette, ref dst.RgbPalette);
 			CopyArray(RawPalette, ref dst.RawPalette);
 			CopyArray(AccessCounters, ref dst.AccessCounters);
+			CopyArray(Ppu2AccessCounters, ref dst.Ppu2AccessCounters);
 		}
 
 		private void CopyArray<T>(T[] src, ref T[] dst)

@@ -59,6 +59,9 @@ namespace Mesen.Interop
 				case MemoryType.NesPaletteRam:
 				case MemoryType.NesSpriteRam:
 				case MemoryType.NesPpuMemory:
+				case MemoryType.NesPpu2Memory:
+				case MemoryType.NesPpu2SpriteRam:
+				case MemoryType.NesPpu2SecondarySpriteRam:
 				case MemoryType.NesSecondarySpriteRam:
 					return CpuType.Nes;
 
@@ -139,6 +142,9 @@ namespace Mesen.Interop
 				case MemoryType.GbSpriteRam:
 
 				case MemoryType.NesPpuMemory:
+				case MemoryType.NesPpu2Memory:
+				case MemoryType.NesPpu2SpriteRam:
+				case MemoryType.NesPpu2SecondarySpriteRam:
 				case MemoryType.NesSecondarySpriteRam:
 				case MemoryType.NesSpriteRam:
 				case MemoryType.NesNametableRam:
@@ -191,6 +197,8 @@ namespace Mesen.Interop
 
 				case MemoryType.NesSecondarySpriteRam:
 				case MemoryType.NesSpriteRam:
+				case MemoryType.NesPpu2SpriteRam:
+				case MemoryType.NesPpu2SecondarySpriteRam:
 				case MemoryType.NesPaletteRam:
 				case MemoryType.NesInternalRam:
 				case MemoryType.NesNametableRam:
@@ -227,6 +235,7 @@ namespace Mesen.Interop
 				case MemoryType.GameboyMemory:
 				case MemoryType.NesMemory:
 				case MemoryType.NesPpuMemory:
+				case MemoryType.NesPpu2Memory:
 				case MemoryType.PceMemory:
 				case MemoryType.SmsMemory:
 				case MemoryType.GbaMemory:
@@ -485,6 +494,7 @@ namespace Mesen.Interop
 
 				MemoryType.NesMemory => "CPU",
 				MemoryType.NesPpuMemory => "PPU",
+				MemoryType.NesPpu2Memory => "PPU2",
 				MemoryType.NesPrgRom => "PRG",
 				MemoryType.NesWorkRam => "WRAM",
 				MemoryType.NesSaveRam => "SRAM",
@@ -493,6 +503,8 @@ namespace Mesen.Interop
 
 				MemoryType.NesSpriteRam => "SPR",
 				MemoryType.NesSecondarySpriteRam => "SPR2",
+				MemoryType.NesPpu2SpriteRam => "P2SPR",
+				MemoryType.NesPpu2SecondarySpriteRam => "P2SPR2",
 				MemoryType.NesPaletteRam => "PAL",
 				MemoryType.NesNametableRam => "NTRAM",
 				MemoryType.NesChrRom => "CHR",
@@ -569,7 +581,9 @@ namespace Mesen.Interop
 
 			return memType switch {
 				MemoryType.NesPpuMemory => "X4",
+				MemoryType.NesPpu2Memory => "X4",
 				MemoryType.NesSpriteRam => "X2",
+				MemoryType.NesPpu2SpriteRam => "X2",
 				_ => "X" + (DebugApi.GetMemorySize(memType) - 1).ToString("X").Length
 			};
 		}

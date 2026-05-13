@@ -683,6 +683,10 @@ namespace Mesen.Interop
 		WsInternalEeprom,
 		WsPort,
 
+		NesPpu2Memory,
+		NesPpu2SpriteRam,
+		NesPpu2SecondarySpriteRam,
+
 		None,
 	}
 

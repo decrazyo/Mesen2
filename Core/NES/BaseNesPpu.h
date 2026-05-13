@@ -102,6 +102,7 @@ protected:
 
 	bool _needVideoRamIncrement = false;
 	bool _allowFullPpuAccess = false;
+	bool _isSecondaryPpu = false;
 
 	uint8_t _memoryReadBuffer = 0;
 	PPUStatusFlags _statusFlags = {};
@@ -114,6 +115,9 @@ protected:
 
 	uint64_t _oamDecayCycles[0x40] = {};
 	bool _corruptOamRow[32] = {};
+
+	uint8_t _secondaryPpuVram[0x2000] = {};
+	uint8_t _extOutput = 0;
 	
 	bool IsRenderingEnabled();
 	void UpdateGrayscaleAndIntensifyBits();
@@ -123,12 +127,19 @@ protected:
 public:
 	virtual void Reset(bool softReset) = 0;
 	virtual void Run(uint64_t runTo) = 0;
+	virtual void RunSingleCycle() = 0;
 
 	uint32_t GetFrameCount() { return _frameCount; }
 	uint32_t GetCurrentCycle() { return _cycle; }
 	int32_t GetCurrentScanline() { return _scanline; }
 	int32_t GetScanlineCount() { return _vblankEnd + 2; }
 	uint32_t GetFrameCycle() { return ((_scanline + 1) * 341) + _cycle; }
+	uint64_t GetMasterClock() { return _masterClock; }
+	uint8_t GetMasterClockDivider() { return _masterClockDivider; }
+	bool IsSecondaryPpu() { return _isSecondaryPpu; }
+	bool IsExtInputMode() { return !_control.SecondaryPpu; }
+	bool IsExtOutputMode() { return _control.SecondaryPpu; }
+	uint8_t GetExtOutput() { return _extOutput & 0x0F; }
 
 	virtual uint16_t* GetScreenBuffer(bool previousBuffer, bool processGrayscaleEmphasisBits = false) = 0;
 	virtual void UpdateTimings(ConsoleRegion region, bool overclockAllowed = true) = 0;
@@ -140,6 +151,8 @@ public:
 
 	uint8_t ReadPaletteRam(uint16_t addr);
 	void WritePaletteRam(uint16_t addr, uint8_t value);
+	uint8_t DebugReadSecondaryVram(uint16_t addr);
+	void DebugWriteSecondaryVram(uint16_t addr, uint8_t value);
 
 	void DebugSendFrame();
 

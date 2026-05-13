@@ -91,6 +91,7 @@ public struct NesState : BaseState
 {
 	public NesCpuState Cpu;
 	public NesPpuState Ppu;
+	public NesPpuState Ppu2;
 	public NesCartridgeState Cartridge;
 	public NesApuState Apu;
 	public UInt32 ClockRate;

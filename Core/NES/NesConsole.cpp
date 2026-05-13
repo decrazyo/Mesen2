@@ -97,6 +97,7 @@ void NesConsole::Serialize(Serializer& s)
 {
 	SV(_cpu);
 	SV(_ppu);
+	SV(_ppu2);
 	SV(_memoryManager);
 	SV(_apu);
 	SV(_mapper);
@@ -127,6 +128,9 @@ void NesConsole::Reset()
 	_memoryManager->Reset(true);
 	
 	_ppu->Reset(true);
+	if(_ppu2) {
+		_ppu2->Reset(true);
+	}
 	_apu->Reset(true);
 	_cpu->Reset(true, _region);
 	_controlManager->Reset(true);
@@ -183,11 +187,19 @@ LoadRomResult NesConsole::LoadRom(VirtualFile& romFile)
 		}
 
 		_mapper->InitSpecificMapper(romData);
+		if(!dynamic_cast<NsfMapper*>(_mapper.get())) {
+			_ppu2.reset(new DefaultNesPpu(this, true));
+		} else {
+			_ppu2.reset();
+		}
 
 		if(_mapper->GetEpsm()) {
 			_memoryManager->RegisterIODevice(_mapper->GetEpsm());
 		}
 		_memoryManager->RegisterIODevice(_ppu.get());
+		if(_ppu2) {
+			_memoryManager->RegisterIODevice(_ppu2.get());
+		}
 		_memoryManager->RegisterIODevice(_apu.get());
 		_memoryManager->RegisterIODevice(_controlManager.get());
 		_memoryManager->RegisterIODevice(_mapper.get());
@@ -204,6 +216,9 @@ LoadRomResult NesConsole::LoadRom(VirtualFile& romFile)
 		_mixer->Reset();
 		
 		_ppu->Reset(false);
+		if(_ppu2) {
+			_ppu2->Reset(false);
+		}
 		_apu->Reset(false);
 		_memoryManager->Reset(false);
 		_controlManager->Reset(false);
@@ -259,8 +274,25 @@ void NesConsole::UpdateRegion(bool forceUpdate)
 		_cpu->SetMasterClockDivider(_region);
 		_mapper->SetRegion(_region);
 		_ppu->UpdateTimings(_region);
+		if(_ppu2) {
+			_ppu2->UpdateTimings(_region);
+		}
 		_apu->SetRegion(_region);
 		_mixer->SetRegion(_region);
+	}
+}
+
+void NesConsole::RunPpus(uint64_t runTo)
+{
+	if(!_ppu2) {
+		_ppu->Run(runTo);
+		return;
+	}
+
+	while(_ppu->GetMasterClock() + _ppu->GetMasterClockDivider() <= runTo) {
+		//PPU2 drives EXT before PPU1 samples it for the same dot.
+		_ppu2->RunSingleCycle();
+		_ppu->RunSingleCycle();
 	}
 }
 
@@ -274,6 +306,9 @@ void NesConsole::RunFrame()
 		//Disable overclocking for the next frame
 		//This is used by the DMC when a sample is playing
 		_ppu->UpdateTimings(_region, false);
+		if(_ppu2) {
+			_ppu2->UpdateTimings(_region, false);
+		}
 		_nextFrameOverclockDisabled = false;
 	}
 
@@ -289,6 +324,9 @@ void NesConsole::RunFrame()
 	if(!_nextFrameOverclockDisabled) {
 		//Re-update timings to allow overclocking
 		_ppu->UpdateTimings(_region, true);
+		if(_ppu2) {
+			_ppu2->UpdateTimings(_region, true);
+		}
 	}
 }
 
@@ -361,6 +399,8 @@ AddressInfo NesConsole::GetAbsoluteAddress(AddressInfo& relAddress)
 {
 	if(relAddress.Type == MemoryType::NesMemory) {
 		return _mapper->GetAbsoluteAddress(relAddress.Address);
+	} else if(relAddress.Type == MemoryType::NesPpu2Memory) {
+		return { relAddress.Address & 0x3FFF, MemoryType::NesPpu2Memory };
 	} else {
 		return _mapper->GetPpuAbsoluteAddress(relAddress.Address);
 	}
@@ -378,6 +418,11 @@ void NesConsole::GetConsoleState(BaseState& baseState, ConsoleType consoleType)
 	state.ClockRate = GetMasterClockRate();
 	state.Cpu = _cpu->GetState();
 	_ppu->GetState(state.Ppu);
+	if(_ppu2) {
+		_ppu2->GetState(state.Ppu2);
+	} else {
+		state.Ppu2 = {};
+	}
 	state.Cartridge = _mapper->GetState();
 	state.Apu = _apu->GetState();
 }
@@ -513,6 +558,18 @@ void NesConsole::DebugWriteVram(uint16_t addr, uint8_t value)
 		_ppu->WritePaletteRam(addr, value);
 	} else {
 		_mapper->DebugWriteVram(addr, value);
+	}
+}
+
+uint8_t NesConsole::DebugReadPpu2Vram(uint16_t addr)
+{
+	return _ppu2 ? _ppu2->DebugReadSecondaryVram(addr) : 0;
+}
+
+void NesConsole::DebugWritePpu2Vram(uint16_t addr, uint8_t value)
+{
+	if(_ppu2) {
+		_ppu2->DebugWriteSecondaryVram(addr, value);
 	}
 }
 

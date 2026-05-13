@@ -249,6 +249,15 @@ namespace Mesen.Debugger.Labels
 			LabelManager.SetLabel(0x2006, MemoryType.NesMemory, "PpuAddr_2006", "Set PPU address, write twice - Write only");
 			LabelManager.SetLabel(0x2007, MemoryType.NesMemory, "PpuData_2007", "Read/Write VRAM");
 
+			LabelManager.SetLabel(0x3000, MemoryType.NesMemory, "Ppu2Control_3000", "PPU2 control");
+			LabelManager.SetLabel(0x3001, MemoryType.NesMemory, "Ppu2Mask_3001", "PPU2 mask");
+			LabelManager.SetLabel(0x3002, MemoryType.NesMemory, "Ppu2Status_3002", "PPU2 status");
+			LabelManager.SetLabel(0x3003, MemoryType.NesMemory, "Ppu2OamAddr_3003", "Set PPU2 OAM address - Write only");
+			LabelManager.SetLabel(0x3004, MemoryType.NesMemory, "Ppu2OamData_3004", "Read/Write PPU2 OAM data");
+			LabelManager.SetLabel(0x3005, MemoryType.NesMemory, "Ppu2Scroll_3005", "Set PPU2 scroll, write twice - Write only");
+			LabelManager.SetLabel(0x3006, MemoryType.NesMemory, "Ppu2Addr_3006", "Set PPU2 address, write twice - Write only");
+			LabelManager.SetLabel(0x3007, MemoryType.NesMemory, "Ppu2Data_3007", "Read/Write PPU2 VRAM");
+
 			LabelManager.SetLabel(0x4000, MemoryType.NesMemory, "Sq0Duty_4000", $"DDLC VVVV{Environment.NewLine}Duty (D), envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)");
 			LabelManager.SetLabel(0x4001, MemoryType.NesMemory, "Sq0Sweep_4001", $"EPPP NSSS{Environment.NewLine}Sweep unit: enabled (E), period (P), negate (N), shift (S)");
 			LabelManager.SetLabel(0x4002, MemoryType.NesMemory, "Sq0Timer_4002", $"TTTT TTTT{Environment.NewLine}Timer low (T)");

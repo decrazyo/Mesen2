@@ -78,7 +78,7 @@ public:
 
 		if(IsRenderingEnabled() || ((_videoRamAddr & 0x3F00) != 0x3F00)) {
 			uint32_t color = GetPixelColor();
-			pixel = (_paletteRam[color & 0x03 ? color : 0] & _paletteRamMask) | _intensifyColorBits;
+			pixel = (_paletteRam[color] & _paletteRamMask) | _intensifyColorBits;
 
 			bool usePrev = (_xScroll + ((_cycle - 1) & 0x07) < 8);
 			uint8_t tilePalette = usePrev ? _previousTilePalette : _currentTilePalette;

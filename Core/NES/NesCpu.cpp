@@ -294,7 +294,7 @@ uint16_t NesCpu::FetchOperand()
 void NesCpu::EndCpuCycle(bool forRead)
 {
 	_masterClock += forRead ? (_endClockCount + 1) : (_endClockCount - 1);
-	_console->GetPpu()->Run(_masterClock - _ppuOffset);
+	_console->RunPpus(_masterClock - _ppuOffset);
 
 	//"The internal signal goes high during φ1 of the cycle that follows the one where the edge is detected,
 	//and stays high until the NMI has been handled. "
@@ -318,7 +318,7 @@ void NesCpu::StartCpuCycle(bool forRead)
 {
 	_masterClock += forRead ? (_startClockCount - 1) : (_startClockCount + 1);
 	_state.CycleCount++;
-	_console->GetPpu()->Run(_masterClock - _ppuOffset);
+	_console->RunPpus(_masterClock - _ppuOffset);
 	_console->ProcessCpuClock();
 }
 

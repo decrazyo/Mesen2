@@ -2796,6 +2796,9 @@ E
 
 			<Value ID="NesMemory">CPU Memory</Value>
 			<Value ID="NesPpuMemory">PPU Memory</Value>
+			<Value ID="NesPpu2Memory">PPU2 Memory</Value>
+			<Value ID="NesPpu2SpriteRam">PPU2 Sprite RAM</Value>
+			<Value ID="NesPpu2SecondarySpriteRam">PPU2 Secondary Sprite RAM</Value>
 			<Value ID="NesPrgRom">PRG ROM</Value>
 			<Value ID="NesInternalRam">System RAM</Value>
 			<Value ID="NesWorkRam">Work RAM</Value>

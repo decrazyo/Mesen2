@@ -465,6 +465,7 @@ struct NesState
 {
 	NesCpuState Cpu;
 	NesPpuState Ppu;
+	NesPpuState Ppu2;
 	CartridgeState Cartridge;
 	ApuState Apu;
 	uint32_t ClockRate;

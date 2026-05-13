@@ -39,6 +39,7 @@ private:
 
 	unique_ptr<NesCpu> _cpu;
 	unique_ptr<BaseNesPpu> _ppu;
+	unique_ptr<BaseNesPpu> _ppu2;
 	unique_ptr<NesApu> _apu;
 	unique_ptr<NesMemoryManager> _memoryManager;
 	unique_ptr<BaseMapper> _mapper;
@@ -70,6 +71,7 @@ public:
 
 	NesCpu* GetCpu() { return _cpu.get(); }
 	BaseNesPpu* GetPpu() { return _ppu.get(); }
+	BaseNesPpu* GetPpu2() { return _ppu2.get(); }
 	NesApu* GetApu() { return _apu.get(); }
 	NesMemoryManager* GetMemoryManager() { return _memoryManager.get(); }
 	BaseMapper* GetMapper() { return _mapper.get(); }
@@ -78,6 +80,7 @@ public:
 	NesConfig& GetNesConfig();
 
 	void ProcessCpuClock();
+	void RunPpus(uint64_t runTo);
 
 	Epsm* GetEpsm();
 
@@ -121,6 +124,8 @@ public:
 	void DebugWrite(uint16_t addr, uint8_t value, bool disableSideEffects);
 	uint8_t DebugReadVram(uint16_t addr);
 	void DebugWriteVram(uint16_t addr, uint8_t value);
+	uint8_t DebugReadPpu2Vram(uint16_t addr);
+	void DebugWritePpu2Vram(uint16_t addr, uint8_t value);
 
 	void ProcessCheatCode(InternalCheatCode& code, uint32_t addr, uint8_t& value) override;
 	void InitializeRam(void* data, uint32_t length);

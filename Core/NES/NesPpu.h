@@ -103,6 +103,7 @@ protected:
 
 public:
 	NesPpu(NesConsole* console);
+	NesPpu(NesConsole* console, bool isSecondaryPpu);
 	virtual ~NesPpu();
 
 	void Reset(bool softReset) override;
@@ -113,9 +114,14 @@ public:
 	
 	void GetMemoryRanges(MemoryRanges& ranges) override
 	{
-		ranges.AddHandler(MemoryOperation::Read, 0x2000, 0x3FFF);
-		ranges.AddHandler(MemoryOperation::Write, 0x2000, 0x3FFF);
-		ranges.AddHandler(MemoryOperation::Write, 0x4014);
+		if(_isSecondaryPpu) {
+			ranges.AddHandler(MemoryOperation::Read, 0x3000, 0x3FFF);
+			ranges.AddHandler(MemoryOperation::Write, 0x3000, 0x3FFF);
+		} else {
+			ranges.AddHandler(MemoryOperation::Read, 0x2000, 0x2FFF);
+			ranges.AddHandler(MemoryOperation::Write, 0x2000, 0x2FFF);
+			ranges.AddHandler(MemoryOperation::Write, 0x4014);
+		}
 	}
 
 	PpuModel GetPpuModel() override;
@@ -128,6 +134,7 @@ public:
 
 	__forceinline void Exec();
 	void Run(uint64_t runTo) override;
+	void RunSingleCycle() override;
 
 	uint32_t GetPixelBrightness(uint8_t x, uint8_t y) override;
 
@@ -142,9 +149,15 @@ void NesPpu<T>::Run(uint64_t runTo)
 {
 	do {
 		//Always need to run at least once, check condition at the end of the loop (slightly faster)
-		Exec();
-		_masterClock += _masterClockDivider;
+		RunSingleCycle();
 	} while(_masterClock + _masterClockDivider <= runTo);
+}
+
+template<class T>
+void NesPpu<T>::RunSingleCycle()
+{
+	Exec();
+	_masterClock += _masterClockDivider;
 }
 
 template<class T> NesPpu<T>::~NesPpu()

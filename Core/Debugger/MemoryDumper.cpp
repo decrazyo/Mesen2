@@ -100,6 +100,7 @@ uint32_t MemoryDumper::GetMemorySize(MemoryType type)
 		case MemoryType::GameboyMemory: return 0x10000;
 		case MemoryType::NesMemory: return 0x10000;
 		case MemoryType::NesPpuMemory: return 0x4000;
+		case MemoryType::NesPpu2Memory: return 0x4000;
 		case MemoryType::PceMemory: return 0x10000;
 		case MemoryType::SmsMemory: return 0x10000;
 		case MemoryType::GbaMemory: return 0x10000000;
@@ -194,6 +195,15 @@ void MemoryDumper::GetMemoryState(MemoryType type, uint8_t *buffer)
 			break;
 		}
 
+		case MemoryType::NesPpu2Memory: {
+			if(_nesConsole) {
+				for(int i = 0; i < 0x4000; i++) {
+					buffer[i] = _nesConsole->DebugReadPpu2Vram(i);
+				}
+			}
+			break;
+		}
+
 		case MemoryType::PceMemory: {
 			if(_pceConsole) {
 				PceMemoryManager* memManager = _pceConsole->GetMemoryManager();
@@ -282,6 +292,7 @@ void MemoryDumper::InternalSetMemoryValues(MemoryType originalMemoryType, uint32
 			case MemoryType::GameboyMemory: _gameboy->GetMemoryManager()->DebugWrite(address, value); break;
 			case MemoryType::NesMemory: _nesConsole->DebugWrite(address, value, disableSideEffects); break;
 			case MemoryType::NesPpuMemory: _nesConsole->DebugWriteVram(address, value); break;
+			case MemoryType::NesPpu2Memory: _nesConsole->DebugWritePpu2Vram(address, value); break;
 			case MemoryType::PceMemory: _pceConsole->GetMemoryManager()->DebugWrite(address, value); break;
 			case MemoryType::SmsMemory: _smsConsole->GetMemoryManager()->DebugWrite(address, value); break;
 			case MemoryType::GbaMemory: _gbaConsole->GetMemoryManager()->DebugWrite(address, value); break;
@@ -307,7 +318,12 @@ void MemoryDumper::InternalSetMemoryValues(MemoryType originalMemoryType, uint32
 					//Prevent invalid memory values
 					switch(memoryType) {
 						case MemoryType::SnesCgRam: src[address] = (address & 0x01) ? (value & 0x7F) : value; break;
-						case MemoryType::NesSpriteRam: case MemoryType::NesSecondarySpriteRam: src[address] = (address & 0x03) == 0x02 ? (value & 0xE3) : value; break;
+						case MemoryType::NesSpriteRam:
+						case MemoryType::NesSecondarySpriteRam:
+						case MemoryType::NesPpu2SpriteRam:
+						case MemoryType::NesPpu2SecondarySpriteRam:
+							src[address] = (address & 0x03) == 0x02 ? (value & 0xE3) : value;
+							break;
 						case MemoryType::NesPaletteRam: src[address] = value & 0x3F; break;
 						case MemoryType::PcePaletteRam: src[address] = (address & 0x01) ? (value & 0x01) : value; break;
 						case MemoryType::SmsPaletteRam: _smsConsole->GetVdp()->DebugWritePalette(address, value); break;
@@ -381,6 +397,7 @@ uint8_t MemoryDumper::InternalGetMemoryValue(MemoryType memoryType, uint32_t add
 		case MemoryType::GameboyMemory: return _gameboy->GetMemoryManager()->DebugRead(address);
 		case MemoryType::NesMemory: return _nesConsole->DebugRead(address);
 		case MemoryType::NesPpuMemory: return _nesConsole->DebugReadVram(address);
+		case MemoryType::NesPpu2Memory: return _nesConsole->DebugReadPpu2Vram(address);
 		case MemoryType::PceMemory: return _pceConsole->GetMemoryManager()->DebugRead(address);
 		case MemoryType::SmsMemory: return _smsConsole->GetMemoryManager()->DebugRead(address);
 		case MemoryType::SmsPort: return _smsConsole->GetMemoryManager()->DebugReadPort(address);

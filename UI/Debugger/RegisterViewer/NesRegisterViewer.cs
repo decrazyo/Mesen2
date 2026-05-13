@@ -11,7 +11,8 @@ public class NesRegisterViewer
 	public static List<RegisterViewerTab> GetTabs(ref NesState nesState)
 	{
 		List<RegisterViewerTab> tabs = new() {
-			GetNesPpuTab(ref nesState),
+			GetNesPpuTab(ref nesState, false),
+			GetNesPpuTab(ref nesState, true),
 			GetNesApuTab(ref nesState)
 		};
 
@@ -23,9 +24,14 @@ public class NesRegisterViewer
 		return tabs;
 	}
 
-	private static RegisterViewerTab GetNesPpuTab(ref NesState state)
+	private static RegisterViewerTab GetNesPpuTab(ref NesState state, bool ppu2)
 	{
-		NesPpuState ppu = state.Ppu;
+		NesPpuState ppu = ppu2 ? state.Ppu2 : state.Ppu;
+		string ctrl = ppu2 ? "$3000" : "$2000";
+		string mask = ppu2 ? "$3001" : "$2001";
+		string status = ppu2 ? "$3002" : "$2002";
+		string oam = ppu2 ? "$3003" : "$2003";
+		string scroll = ppu2 ? "$3005-3006" : "$2005-2006";
 
 		List<RegEntry> entries = new List<RegEntry>() {
 			new RegEntry("", "State"),
@@ -35,39 +41,39 @@ public class NesRegisterViewer
 			new RegEntry("", "PPU Bus Address", ppu.BusAddress, Format.X16),
 			new RegEntry("", "PPU Register Buffer", ppu.MemoryReadBuffer, Format.X8),
 
-			new RegEntry("$2000", "Control"),
-			new RegEntry("$2000.2", "Increment Mode", ppu.Control.VerticalWrite ? "32 bytes" : "1 byte", ppu.Control.VerticalWrite),
-			new RegEntry("$2000.3", "Sprite Table Address", ppu.Control.SpritePatternAddr == 0 ? "$0000" : "$1000", ppu.Control.SpritePatternAddr),
-			new RegEntry("$2000.4", "BG Table Address", ppu.Control.BackgroundPatternAddr == 0 ? "$0000" : "$1000", ppu.Control.BackgroundPatternAddr),
-			new RegEntry("$2000.5", "Sprite Size", ppu.Control.LargeSprites ? "8x16" : "8x8", ppu.Control.LargeSprites),
-			new RegEntry("$2000.6", "Main/secondary PPU select", ppu.Control.SecondaryPpu ? "Secondary" : "Main", ppu.Control.SecondaryPpu),
-			new RegEntry("$2000.7", "NMI enabled", ppu.Control.NmiOnVerticalBlank),
+			new RegEntry(ctrl, "Control"),
+			new RegEntry(ctrl + ".2", "Increment Mode", ppu.Control.VerticalWrite ? "32 bytes" : "1 byte", ppu.Control.VerticalWrite),
+			new RegEntry(ctrl + ".3", "Sprite Table Address", ppu.Control.SpritePatternAddr == 0 ? "$0000" : "$1000", ppu.Control.SpritePatternAddr),
+			new RegEntry(ctrl + ".4", "BG Table Address", ppu.Control.BackgroundPatternAddr == 0 ? "$0000" : "$1000", ppu.Control.BackgroundPatternAddr),
+			new RegEntry(ctrl + ".5", "Sprite Size", ppu.Control.LargeSprites ? "8x16" : "8x8", ppu.Control.LargeSprites),
+			new RegEntry(ctrl + ".6", "EXT Mode", ppu.Control.SecondaryPpu ? "Output" : "Input", ppu.Control.SecondaryPpu),
+			new RegEntry(ctrl + ".7", ppu2 ? "NMI enabled (not wired)" : "NMI enabled", ppu.Control.NmiOnVerticalBlank),
 
-			new RegEntry("$2001", "Mask"),
-			new RegEntry("$2001.0", "Grayscale", ppu.Mask.Grayscale),
-			new RegEntry("$2001.1", "BG - Show leftmost 8 pixels", ppu.Mask.BackgroundMask),
-			new RegEntry("$2001.2", "Sprites - Show leftmost 8 pixels", ppu.Mask.SpriteMask),
-			new RegEntry("$2001.3", "Background enabled", ppu.Mask.BackgroundEnabled),
-			new RegEntry("$2001.4", "Sprites enabled", ppu.Mask.SpritesEnabled),
-			new RegEntry("$2001.5", "Red emphasis", ppu.Mask.IntensifyRed),
-			new RegEntry("$2001.6", "Green emphasis", ppu.Mask.IntensifyGreen),
-			new RegEntry("$2001.7", "Blue emphasis", ppu.Mask.IntensifyBlue),
+			new RegEntry(mask, "Mask"),
+			new RegEntry(mask + ".0", "Grayscale", ppu.Mask.Grayscale),
+			new RegEntry(mask + ".1", "BG - Show leftmost 8 pixels", ppu.Mask.BackgroundMask),
+			new RegEntry(mask + ".2", "Sprites - Show leftmost 8 pixels", ppu.Mask.SpriteMask),
+			new RegEntry(mask + ".3", "Background enabled", ppu.Mask.BackgroundEnabled),
+			new RegEntry(mask + ".4", "Sprites enabled", ppu.Mask.SpritesEnabled),
+			new RegEntry(mask + ".5", "Red emphasis", ppu.Mask.IntensifyRed),
+			new RegEntry(mask + ".6", "Green emphasis", ppu.Mask.IntensifyGreen),
+			new RegEntry(mask + ".7", "Blue emphasis", ppu.Mask.IntensifyBlue),
 
-			new RegEntry("$2002", "Status"),
-			new RegEntry("$2002.5", "Sprite overflow", ppu.StatusFlags.SpriteOverflow),
-			new RegEntry("$2002.6", "Sprite 0 hit", ppu.StatusFlags.Sprite0Hit),
-			new RegEntry("$2002.7", "Vertical blank", ppu.StatusFlags.VerticalBlank),
+			new RegEntry(status, "Status"),
+			new RegEntry(status + ".5", "Sprite overflow", ppu.StatusFlags.SpriteOverflow),
+			new RegEntry(status + ".6", "Sprite 0 hit", ppu.StatusFlags.Sprite0Hit),
+			new RegEntry(status + ".7", "Vertical blank", ppu.StatusFlags.VerticalBlank),
 
-			new RegEntry("$2003", "OAM address", ppu.SpriteRamAddr, Format.X8),
+			new RegEntry(oam, "OAM address", ppu.SpriteRamAddr, Format.X8),
 
-			new RegEntry("$2005-2006", "VRAM Address / Scrolling"),
+			new RegEntry(scroll, "VRAM Address / Scrolling"),
 			new RegEntry("", "VRAM Address", ppu.VideoRamAddr, Format.X16),
 			new RegEntry("", "T", ppu.TmpVideoRamAddr, Format.X16),
 			new RegEntry("", "X Scroll", ppu.ScrollX),
 			new RegEntry("", "Write Toggle", ppu.WriteToggle)
 		};
 
-		return new RegisterViewerTab("PPU", entries, CpuType.Nes, MemoryType.NesMemory);
+		return new RegisterViewerTab(ppu2 ? "PPU2" : "PPU", entries, CpuType.Nes, MemoryType.NesMemory);
 	}
 
 	private static RegisterViewerTab GetNesApuTab(ref NesState state)

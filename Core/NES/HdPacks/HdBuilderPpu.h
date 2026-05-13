@@ -61,7 +61,7 @@ public:
 
 			_lastSprite = nullptr;
 			uint32_t color = GetPixelColor();
-			_currentOutputBuffer[(_scanline << 8) + _cycle - 1] = _paletteRam[color & 0x03 ? color : 0];
+			_currentOutputBuffer[(_scanline << 8) + _cycle - 1] = _paletteRam[color];
 			uint32_t backgroundColor = 0;
 			if(_mask.BackgroundEnabled && _cycle > _minimumDrawBgCycle) {
 				backgroundColor = (((_lowBitShift << _xScroll) & 0x8000) >> 15) | (((_highBitShift << _xScroll) & 0x8000) >> 14);

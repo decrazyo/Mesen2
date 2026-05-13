@@ -102,6 +102,29 @@ void BaseNesPpu::WritePaletteRam(uint16_t addr, uint8_t value)
 	}
 }
 
+uint8_t BaseNesPpu::DebugReadSecondaryVram(uint16_t addr)
+{
+	addr &= 0x3FFF;
+	if(addr >= 0x3F00) {
+		return ReadPaletteRam(addr);
+	}
+
+	uint16_t vramAddr = addr < 0x2000 ? (addr & 0x0FFF) : (0x1000 | ((addr - 0x2000) & 0x0FFF));
+	return _secondaryPpuVram[vramAddr];
+}
+
+void BaseNesPpu::DebugWriteSecondaryVram(uint16_t addr, uint8_t value)
+{
+	addr &= 0x3FFF;
+	if(addr >= 0x3F00) {
+		WritePaletteRam(addr, value);
+		return;
+	}
+
+	uint16_t vramAddr = addr < 0x2000 ? (addr & 0x0FFF) : (0x1000 | ((addr - 0x2000) & 0x0FFF));
+	_secondaryPpuVram[vramAddr] = value;
+}
+
 void BaseNesPpu::DebugSendFrame()
 {
 	int offset = std::max(0, (int)(_cycle + _scanline * NesConstants::ScreenWidth));
