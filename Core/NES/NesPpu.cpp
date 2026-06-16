@@ -909,7 +909,7 @@ template<class T> uint8_t NesPpu<T>::GetPixelColor()
 		}
 	}
 	outputColor = ((offset + ((_cycle - 1) & 0x07) < 8) ? _previousTilePalette : _currentTilePalette) + backgroundColor;
-	_extOutput = (outputColor & 0x03) ? (outputColor & 0x0F) : 0;
+	_extOutput = _isSecondaryPpu ? (outputColor & 0x0F) : ((outputColor & 0x03) ? (outputColor & 0x0F) : 0);
 
 	if(!_isSecondaryPpu && (outputColor & 0x03) == 0) {
 		BaseNesPpu* ppu2 = _console->GetPpu2();
