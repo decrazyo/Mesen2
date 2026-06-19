@@ -1,6 +1,6 @@
 name: Build Mesen
 
-on: [push]
+on: [push, workflow_dispatch]
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
